@@ -1,28 +1,30 @@
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-import time
+import json
+import tornado.ioloop
+import tornado.web
+import pyautogui
 
-class SimpleHTTPServer(ThreadingHTTPServer):
-    pass
+def printAndWebWrite(rh:tornado.web.RequestHandler, something: any):
+    print(something)
+    rh.write(something)
 
-class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
-    server: SimpleHTTPServer
-    def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(bytes("dasdasdasdasd","utf8"))
-        # self.wfile.flush()
-        # self.wfile.close().encode("utf8")
+class MainHandler(tornado.web.RequestHandler):
+    def get(self):
+        try:
+            x = self.get_argument("x")
+            y = self.get_argument("y")
+            jsonstr = json.dumps({"x":x,"y":y})
+            pyautogui.click(int(x), int(y))
+            printAndWebWrite(self, jsonstr)
+        except:
+            printAndWebWrite(self, "need x and y")
 
-    def do_POST(self):
-        self.send_response(200)
-        self.end_headers()
-
-    def log_message(self, *argus):
-        print(argus)
-        pass
+def make_app():
+    return tornado.web.Application([
+        (r"/", MainHandler),
+    ])
 
 class Webserver:
-
 
     def __init__(self):
         pass
@@ -30,6 +32,7 @@ class Webserver:
     def start(self):
         ip = "127.0.0.1"
         port = "6727"
-        httpd = SimpleHTTPServer((ip, int(port)), SimpleHTTPRequestHandler)
+        app = make_app()
+        app.listen(port)
         print(f"web server start at {ip}:{port}")
-        httpd.serve_forever()
+        tornado.ioloop.IOLoop.current().start()
